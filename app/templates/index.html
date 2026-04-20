@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SOL Price Predictor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #9945FF;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      color: #888;
+      margin-bottom: 30px;
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
+      border-radius: 16px;
+      padding: 30px;
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      color: #9945FF;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #2a2a4a;
+      padding-bottom: 10px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.82rem;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input {
+      background: #0f0f1a;
+      border: 1px solid #3a3a5a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input:focus { border-color: #9945FF; }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #9945FF, #14F195);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: opacity 0.2s;
+    }
+
+    button:hover { opacity: 0.88; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Result card */
+    #result-card {
+      display: none;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .result-signal {
+      font-size: 2.5rem;
+      font-weight: 700;
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    .up   { color: #14F195; }
+    .down { color: #FF4757; }
+
+    .confidence-bar-wrap {
+      margin: 16px 0 8px;
+    }
+
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      margin-bottom: 5px;
+      color: #aaa;
+    }
+
+    .bar-bg {
+      background: #0f0f1a;
+      border-radius: 99px;
+      height: 12px;
+      overflow: hidden;
+    }
+
+    .bar-fill-up {
+      height: 100%;
+      background: linear-gradient(90deg, #14F195, #00c97a);
+      border-radius: 99px;
+      transition: width 0.6s ease;
+    }
+
+    .bar-fill-down {
+      height: 100%;
+      background: linear-gradient(90deg, #FF4757, #cc2233);
+      border-radius: 99px;
+      transition: width 0.6s ease;
+    }
+
+    .meta {
+      font-size: 0.82rem;
+      color: #666;
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    .error-box {
+      background: #2a0a0a;
+      border: 1px solid #FF4757;
+      border-radius: 10px;
+      padding: 14px;
+      color: #FF4757;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .loader {
+      text-align: center;
+      color: #9945FF;
+      font-size: 0.95rem;
+      display: none;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>⬡ SOL Price Predictor</h1>
+  <p class="subtitle">Predict whether Solana's price will go UP or DOWN tomorrow</p>
+
+  <!-- Input Card -->
+  <div class="card">
+    <h2>📊 Enter Market Features</h2>
+    <div class="grid">
+      <div class="input-group">
+        <label>Close Price (USD)</label>
+        <input type="number" id="Close" placeholder="e.g. 23.45" step="any"/>
+      </div>
+      <div class="input-group">
+        <label>Volume</label>
+        <input type="number" id="Volume" placeholder="e.g. 1500000" step="any"/>
+      </div>
+      <div class="input-group">
+        <label>Daily Return (%)</label>
+        <input type="number" id="Daily_Return" placeholder="e.g. 2.3" step="any"/>
+      </div>
+      <div class="input-group">
+        <label>7-Day Moving Avg</label>
+        <input type="number" id="MA_7" placeholder="e.g. 22.10" step="any"/>
+      </div>
+      <div class="input-group">
+        <label>21-Day Moving Avg</label>
+        <input type="number" id="MA_21" placeholder="e.g. 21.50" step="any"/>
+      </div>
+      <div class="input-group">
+        <label>Price Range (H-L)</label>
+        <input type="number" id="Price_Range" placeholder="e.g. 1.20" step="any"/>
+      </div>
+      <div class="input-group" style="grid-column: span 2;">
+        <label>Volume Change (%)</label>
+        <input type="number" id="Volume_Change" placeholder="e.g. 5.4" step="any"/>
+      </div>
+    </div>
+
+    <div class="error-box" id="error-box"></div>
+    <div class="loader" id="loader">⏳ Predicting...</div>
+    <button id="predict-btn" onclick="predict()">🔮 Predict</button>
+  </div>
+
+  <!-- Result Card -->
+  <div class="card" id="result-card">
+    <h2>🎯 Prediction Result</h2>
+    <div class="result-signal" id="signal-text"></div>
+
+    <div class="confidence-bar-wrap">
+      <div class="bar-label">
+        <span>📈 UP</span>
+        <span id="conf-up-label">0%</span>
+      </div>
+      <div class="bar-bg">
+        <div class="bar-fill-up" id="bar-up" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="confidence-bar-wrap">
+      <div class="bar-label">
+        <span>📉 DOWN</span>
+        <span id="conf-down-label">0%</span>
+      </div>
+      <div class="bar-bg">
+        <div class="bar-fill-down" id="bar-down" style="width:0%"></div>
+      </div>
+    </div>
+
+    <p class="meta" id="model-meta"></p>
+  </div>
+
+  <script>
+    const FEATURES = ['Close','Volume','Daily_Return','MA_7','MA_21','Price_Range','Volume_Change'];
+
+    async function predict() {
+      // Reset UI
+      document.getElementById('error-box').style.display  = 'none';
+      document.getElementById('result-card').style.display = 'none';
+      document.getElementById('loader').style.display      = 'block';
+      document.getElementById('predict-btn').disabled      = true;
+
+      // Validate & build payload
+      const payload = {};
+      for (const f of FEATURES) {
+        const val = document.getElementById(f).value;
+        if (val === '' || isNaN(val)) {
+          showError(`Please fill in the "${f}" field correctly.`);
+          return;
+        }
+        payload[f] = parseFloat(val);
+      }
+
+      try {
+        const res  = await fetch('/predict', {
+          method : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body   : JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.error) { showError(data.error); return; }
+
+        // Show result
+        const isUp  = data.prediction === 1;
+        const sigEl = document.getElementById('signal-text');
+        sigEl.textContent = data.signal;
+        sigEl.className   = 'result-signal ' + (isUp ? 'up' : 'down');
+
+        document.getElementById('conf-up-label').textContent   = data.confidence_up   + '%';
+        document.getElementById('conf-down-label').textContent = data.confidence_down + '%';
+        document.getElementById('bar-up').style.width          = data.confidence_up   + '%';
+        document.getElementById('bar-down').style.width        = data.confidence_down + '%';
+        document.getElementById('model-meta').textContent      = `Model: ${data.model_used}`;
+
+        document.getElementById('result-card').style.display = 'block';
+
+      } catch (err) {
+        showError('Could not connect to the API. Is Flask running?');
+      } finally {
+        document.getElementById('loader').style.display     = 'none';
+        document.getElementById('predict-btn').disabled     = false;
+      }
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('error-box');
+      box.textContent    = '⚠️ ' + msg;
+      box.style.display  = 'block';
+      document.getElementById('loader').style.display     = 'none';
+      document.getElementById('predict-btn').disabled     = false;
+    }
+  </script>
+
+</body>
+</html>
